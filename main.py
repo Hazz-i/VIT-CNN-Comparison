@@ -45,7 +45,7 @@ if uploaded_file is not None:
     st.image(image, caption='Gambar yang diunggah', use_container_width=True)
     
     st.write("---")
-    st.write(f"**Sedang memproses menggunakan: {selected_model_name}...**")
+    st.write(f"**Prediksi menggunakan: {selected_model_name}**")
 
     # --- PREPROCESSING ---
     # 1. Resize ke 224x224 sesuai IMG_SIZE di notebook
@@ -58,28 +58,23 @@ if uploaded_file is not None:
     img_array = np.expand_dims(img_array, axis=0)
 
     # --- PREDIKSI ---
-    predictions = model.predict(img_array)
+    # Jalankan prediksi satu kali saja
+    preds = model.predict(img_array)
     
-    # Di dalam bagian prediksi setelah model.predict(img_array):
-    predictions_dict = model.predict(img_array)
+    # Penanganan output Keras 3 (bisa berupa dict atau numpy array)
+    if isinstance(preds, dict):
+        # Jika output berupa dictionary, ambil value pertama dan batch pertama
+        prediction = list(preds.values())[0][0]
+    else:
+        # Jika output sudah berupa numpy array, langsung ambil batch pertama
+        prediction = preds[0]
 
-    # Ambil value pertama dari dictionary (biasanya kuncinya 'output_0')
-    predictions = list(predictions_dict.values())[0]
-
-    # Baru kemudian gunakan argmax
-    result_index = np.argmax(predictions)
-    confidence = np.max(predictions) * 100
+    # result_index: Indeks kelas dengan probabilitas tertinggi
+    result_index = np.argmax(prediction)
+    # confidence: Nilai probabilitas tertinggi dalam persen
+    confidence = np.max(prediction) * 100
 
     # --- TAMPILKAN HASIL ---
     st.subheader(f"Hasil Prediksi: **{class_names[result_index]}**")
     st.progress(int(confidence))
     st.write(f"Tingkat Keyakinan: **{confidence:.2f}%**")
-
-    # Memberikan info tambahan berdasarkan hasil
-    if class_names[result_index] == 'Healthy':
-        st.success("Daun selada kamu terlihat sehat! Tetap jaga kelembapan dan nutrisi.")
-    else:
-        st.warning(f"Terdeteksi gejala {class_names[result_index]}. Segera lakukan penanganan tanaman.")
-
-else:
-    st.info("Silakan unggah gambar untuk memulai klasifikasi.")
